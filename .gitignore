@@ -1,0 +1,39 @@
+# --- IDEs & System ---
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.env
+
+# --- C++ ---
+*.o
+*.obj
+*.exe
+*.out
+*.app
+build/
+
+# --- Java / Kotlin ---
+*.class
+*.log
+*.jar
+*.war
+*.ear
+target/
+.gradle/
+build/
+
+# --- Flutter / Dart ---
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+build/
