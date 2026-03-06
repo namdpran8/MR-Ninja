@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mr Ninja — Break the 200k Token Limit</title>
+<meta name="description" content="Large Context Orchestrator for GitLab Duo. Intelligently chunk and analyze enterprise MRs of any size.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #08080f;
+    --surface: #0e0e1a;
+    --border: #1a1a2e;
+    --card: #0f0f1c;
+    --orange: #ff6b2b;
+    --amber: #ffaa00;
+    --green: #00d88a;
+    --red: #ff3b5c;
+    --blue: #4a9eff;
+    --purple: #9b59ff;
+    --teal: #00c4b4;
+    --text: #e0e0f0;
+    --muted: #5a5a78;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Instrument Serif', Georgia, serif;
+    font-size: 18px;
+    line-height: 1.65;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(255,107,43,0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,107,43,0.025) 1px, transparent 1px);
+    background-size: 80px 80px;
+    pointer-events: none; z-index: 0;
+  }
+
+  .z1 { position: relative; z-index: 1; }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    padding: 16px 48px;
+    display: flex; align-items: center; justify-content: space-between;
+    background: rgba(8,8,15,0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .nav-logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800; font-size: 20px;
+    color: #fff; text-decoration: none;
+    letter-spacing: -0.02em;
+  }
+
+  .nav-logo span { color: var(--orange); }
+
+  .nav-links {
+    display: flex; gap: 32px; list-style: none;
+  }
+
+  .nav-links a {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px; letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted); text-decoration: none;
+    transition: color 0.2s;
+  }
+
+  .nav-links a:hover { color: var(--orange); }
+
+  @media (max-width: 768px) { 
+    nav { padding: 16px 24px; }
+    .nav-links { display: none; } 
+  }
+
+  /* ── HERO ── */
+  .hero {
+    min-height: 100vh;
+    display: flex; flex-direction: column;
+    justify-content: center; align-items: center;
+    text-align: center;
+    padding: 120px 40px 80px;
+    position: relative;
+  }
+
+  .hero-glow {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 800px; height: 800px;
+    background: radial-gradient(ellipse, rgba(255,107,43,0.08) 0%, transparent 65%);
+    pointer-events: none;
+  }
+
+  .badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 6px 16px;
+    background: rgba(255,107,43,0.1);
+    border: 1px solid rgba(255,107,43,0.3);
+    border-radius: 100px;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase;
+    color: var(--orange);
+    margin-bottom: 32px;
+    opacity: 0;
+    animation: fadeUp 0.8s ease forwards 0.1s;
+  }
+
+  .badge::before { content: '🥷'; font-size: 14px; }
+
+  h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(48px, 10vw, 110px);
+    font-weight: 800; line-height: 0.95;
+    letter-spacing: -0.04em; color: #fff;
+    opacity: 0;
+    animation: fadeUp 0.8s ease forwards 0.3s;
+    margin-bottom: 24px;
+  }
+
+  h1 .accent { color: var(--orange); }
+
+  .hero-sub {
+    margin-top: 20px;
+    font-size: clamp(17px, 2vw, 22px);
+    font-style: italic; color: #7070a0;
+    max-width: 680px;
+    opacity: 0;
+    animation: fadeUp 0.8s ease forwards 0.5s;
+  }
+
+  .problem-pills {
+    margin-top: 40px;
+    display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;
+    opacity: 0;
+    animation: fadeUp 0.8s ease forwards 0.7s;
+  }
+
+  .pill {
+    padding: 8px 18px;
+    border-radius: 8px;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px; border: 1px solid;
+  }
+
+  .pill-1 { border-color: rgba(255,59,92,0.4); color: var(--red); background: rgba(255,59,92,0.06); }
+  .pill-2 { border-color: rgba(255,170,0,0.4); color: var(--amber); background: rgba(255,170,0,0.06); }
+  .pill-3 { border-color: rgba(0,216,138,0.4); color: var(--green); background: rgba(0,216,138,0.06); }
+
+  .hero-cta {
+    margin-top: 48px;
+    display: flex; gap: 16px; flex-wrap: wrap;
+    justify-content: center;
+    opacity: 0;
+    animation: fadeUp 0.8s ease forwards 0.9s;
+  }
+
+  .btn {
+    padding: 14px 32px;
+    border-radius: 8px;
+    font-family: 'DM Mono', monospace;
+    font-size: 13px; letter-spacing: 0.05em;
+    text-decoration: none;
+    transition: all 0.3s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .btn-primary {
+    background: var(--orange);
+    color: #fff;
+    border: 1px solid var(--orange);
+  }
+
+  .btn-primary:hover {
+    background: var(--amber);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(255,107,43,0.3);
+  }
+
+  .btn-secondary {
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+
+  .btn-secondary:hover {
+    border-color: var(--orange);
+    color: var(--orange);
+  }
+
+  /* ── SECTIONS ── */
+  .section {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 100px 40px;
+  }
+
+  .label {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+
+  h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(32px, 5vw, 54px);
+    font-weight: 800; line-height: 1.08;
+    letter-spacing: -0.02em; color: #fff;
+    margin-bottom: 20px;
+  }
+
+  h2 em { 
+    font-style: italic; 
+    font-family: 'Instrument Serif'; 
+    font-weight: 400;
+    color: var(--orange);
+  }
+
+  .lead {
+    font-size: clamp(17px, 2vw, 20px);
+    color: #8080a8; line-height: 1.75; max-width: 740px;
+  }
+
+  .divider {
+    width: 100%; height: 1px;
+    background: linear-gradient(to right, transparent, var(--border), transparent);
+  }
+
+  /* ── PROBLEM CARDS ── */
+  .problem-trinity {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    margin-top: 60px;
+  }
+
+  @media (max-width: 900px) { .problem-trinity { grid-template-columns: 1fr; } }
+
+  .problem-card {
+    padding: 32px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    border-top: 3px solid;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .problem-card::after {
+    content: attr(data-num);
+    position: absolute; bottom: -20px; right: 12px;
+    font-family: 'Syne', sans-serif;
+    font-size: 80px; font-weight: 800;
+    opacity: 0.04; color: #fff; line-height: 1;
+    pointer-events: none;
+  }
+
+  .pc-1 { border-top-color: var(--red); }
+  .pc-2 { border-top-color: var(--amber); }
+  .pc-3 { border-top-color: var(--blue); }
+
+  .problem-num {
+    font-family: 'DM Mono', monospace; 
+    font-size: 11px; 
+    letter-spacing: 0.15em;
+    text-transform: uppercase; 
+    margin-bottom: 12px;
+  }
+
+  .pc-1 .problem-num { color: var(--red); }
+  .pc-2 .problem-num { color: var(--amber); }
+  .pc-3 .problem-num { color: var(--blue); }
+
+  .problem-card h3 {
+    font-family: 'Syne', sans-serif;
+    font-size: 20px; font-weight: 700;
+    color: #fff; margin-bottom: 12px;
+  }
+
+  .problem-card p { 
+    font-size: 15px; 
+    color: #7070a0; 
+    line-height: 1.6; 
+  }
+
+  /* ── FLOW DIAGRAM ── */
+  .flow {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    margin-top: 40px;
+    flex-wrap: wrap;
+  }
+
+  .flow-step {
+    flex: 1; min-width: 180px;
+    display: flex; flex-direction: column;
+    align-items: center; gap: 0;
+  }
+
+  .flow-box {
+    width: 100%;
+    padding: 24px 18px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    text-align: center;
+    position: relative;
+    transition: all 0.3s;
+  }
+
+  .flow-box:hover {
+    border-color: var(--orange);
+    transform: translateY(-4px);
+  }
+
+  .flow-icon { font-size: 32px; margin-bottom: 12px; }
+
+  .flow-title {
+    font-family: 'DM Mono', monospace; 
+    font-size: 11px;
+    letter-spacing: 0.1em; 
+    text-transform: uppercase;
+    color: var(--orange); 
+    margin-bottom: 8px;
+    font-weight: 500;
+  }
+
+  .flow-desc { 
+    font-size: 13px; 
+    color: #7070a0; 
+    line-height: 1.5; 
+  }
+
+  .flow-arrow {
+    display: flex; 
+    align-items: center; 
+    padding: 0 8px;
+    color: var(--orange); 
+    font-size: 24px;
+    flex-shrink: 0; 
+    align-self: center;
+  }
+
+  @media (max-width: 768px) {
+    .flow { flex-direction: column; }
+    .flow-arrow { 
+      transform: rotate(90deg); 
+      padding: 8px 0;
+    }
+  }
+
+  /* ── TERMINAL ── */
+  .terminal {
+    margin-top: 32px;
+    background: #060610;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+  }
+
+  .terminal-bar {
+    padding: 10px 16px;
+    background: #0d0d1e;
+    border-bottom: 1px solid var(--border);
+    display: flex; 
+    align-items: center; 
+    gap: 6px;
+  }
+
+  .t-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .t-dot.r { background: #ff5f57; }
+  .t-dot.y { background: #febc2e; }
+  .t-dot.g { background: #28c840; }
+  .terminal-label { 
+    margin-left: 8px; 
+    color: var(--muted); 
+    font-size: 12px; 
+  }
+
+  .terminal-body { 
+    padding: 24px; 
+    line-height: 2; 
+  }
+
+  .t-cmd { color: var(--green); }
+  .t-comment { color: var(--muted); }
+  .t-ok { color: var(--green); }
+  .t-warn { color: var(--amber); }
+  .t-err { color: var(--red); }
+  .t-info { color: var(--blue); }
+  .t-path { color: #c8c8e8; }
+
+  /* ── STATS ── */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+    margin-top: 48px;
+  }
+
+  @media (max-width: 900px) { 
+    .stats-grid { grid-template-columns: repeat(2, 1fr); } 
+  }
+
+  @media (max-width: 480px) { 
+    .stats-grid { grid-template-columns: 1fr; } 
+  }
+
+  .stat-card {
+    padding: 32px 24px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    text-align: center;
+    transition: all 0.3s;
+  }
+
+  .stat-card:hover {
+    border-color: var(--orange);
+    transform: translateY(-4px);
+  }
+
+  .stat-num {
+    font-family: 'Syne', sans-serif;
+    font-size: 48px;
+    font-weight: 800;
+    line-height: 1;
+    color: var(--orange);
+    margin-bottom: 12px;
+  }
+
+  .stat-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  /* ── FEATURES ── */
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
+    margin-top: 56px;
+  }
+
+  @media (max-width: 768px) { 
+    .features-grid { grid-template-columns: 1fr; } 
+  }
+
+  .feature-card {
+    padding: 36px 32px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .feature-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--orange), var(--amber));
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .feature-card:hover::before {
+    opacity: 1;
+  }
+
+  .feature-card:hover {
+    border-color: var(--orange);
+    transform: translateY(-4px);
+  }
+
+  .feature-icon {
+    font-size: 36px;
+    margin-bottom: 16px;
+  }
+
+  .feature-card h3 {
+    font-family: 'Syne', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 12px;
+  }
+
+  .feature-card p {
+    font-size: 15px;
+    color: #7070a0;
+    line-height: 1.7;
+  }
+
+  .inline-code {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    background: rgba(255,107,43,0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: var(--orange);
+  }
+
+  /* ── CTA SECTION ── */
+  .cta-section {
+    background: linear-gradient(135deg, rgba(255,107,43,0.08) 0%, rgba(155,89,255,0.08) 100%);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: 60px 40px;
+    text-align: center;
+    margin-top: 60px;
+  }
+
+  .cta-section h2 {
+    margin-bottom: 16px;
+  }
+
+  .cta-section .lead {
+    margin: 0 auto 32px;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    text-align: center;
+    padding: 80px 40px;
+    border-top: 1px solid var(--border);
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  footer .logo {
+    font-family: 'Syne', sans-serif;
+    font-size: 36px;
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: -0.04em;
+    margin-bottom: 16px;
+  }
+
+  footer .logo span { color: var(--orange); }
+
+  footer a {
+    color: var(--orange);
+    text-decoration: none;
+  }
+
+  footer a:hover {
+    text-decoration: underline;
+  }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .reveal {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .reveal-delay-1 { transition-delay: 0.1s; }
+  .reveal-delay-2 { transition-delay: 0.2s; }
+  .reveal-delay-3 { transition-delay: 0.3s; }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="z1">
+  <a class="nav-logo" href="#top">Mr <span>Ninja</span></a>
+  <ul class="nav-links">
+    <li><a href="#problem">Problem</a></li>
+    <li><a href="#solution">Solution</a></li>
+    <li><a href="#how-it-works">How It Works</a></li>
+    <li><a href="#features">Features</a></li>
+    <li><a href="docs.html">Docs</a></li>
+  </ul>
+</nav>
+
+<div class="z1">
+
+<!-- HERO -->
+<div class="hero" id="top">
+  <div class="hero-glow"></div>
+  <div class="badge">GitLab AI Hackathon 2026</div>
+  <h1>Break the <span class="accent">200k</span><br>Token Limit</h1>
+  <p class="hero-sub">
+    Intelligent MR analysis for enterprise monorepos. Mr Ninja chunks, processes, and 
+    aggregates merge requests of any size through GitLab Duo's specialist agents.
+  </p>
+
+  <div class="problem-pills">
+    <span class="pill pill-1">🔴 Truncated MR reviews</span>
+    <span class="pill pill-2">🟡 Incomplete security scans</span>
+    <span class="pill pill-3">🔵 Compliance gaps</span>
+  </div>
+
+  <div class="hero-cta">
+    <a href="#solution" class="btn btn-primary">See How It Works →</a>
+    <a href="https://gitlab.com/your-group/mr-ninja" class="btn btn-secondary" target="_blank" rel="noopener noreferrer">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+        <path d="M8 0l1.6 4.9h5.2l-4.2 3-1.6 4.9-1.6-4.9-4.2-3h5.2z"/>
+      </svg>
+      View on GitLab
+    </a>
+  </div>
+</div>
+
+<!-- THE PROBLEM -->
+<div id="problem">
+<div class="divider"></div>
+
+<section class="section">
+  <div class="label reveal" style="color: var(--red);">The Problem</div>
+  <h2 class="reveal">GitLab Duo caps at <em>~200,000 tokens.</em><br>Enterprise MRs are <em>5-10× that.</em></h2>
+  <p class="lead reveal">
+    For real enterprise monorepos with hundreds of changed files and massive diffs, 
+    the context limit means truncated reviews, missed vulnerabilities, and compliance gaps. 
+    A single MR can easily generate <strong style="color: var(--orange);">500,000-1,000,000 tokens</strong> of diff content.
+  </p>
+
+  <div class="problem-trinity">
+    <div class="problem-card pc-1 reveal reveal-delay-1" data-num="1">
+      <p class="problem-num">Problem 01</p>
+      <h3>Truncated Reviews</h3>
+      <p>Large MRs get cut off mid-analysis. Security-critical files in the tail never get scanned. Vulnerabilities slip through.</p>
+    </div>
+    <div class="problem-card pc-2 reveal reveal-delay-2" data-num="2">
+      <p class="problem-num">Problem 02</p>
+      <h3>Incomplete Scans</h3>
+      <p>When context limits hit, security checks skip files. Compliance requirements fail. Automated analysis becomes unreliable.</p>
+    </div>
+    <div class="problem-card pc-3 reveal reveal-delay-3" data-num="3">
+      <p class="problem-num">Problem 03</p>
+      <h3>Developer Frustration</h3>
+      <p>Teams can't get automated analysis for monorepo MRs with 500+ files. Manual review is the only option.</p>
+    </div>
+  </div>
+
+  <div class="stats-grid reveal" style="margin-top: 64px;">
+    <div class="stat-card">
+      <div class="stat-num">800k+</div>
+      <div class="stat-label">Tokens in<br>typical MR</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num">200k</div>
+      <div class="stat-label">GitLab Duo<br>context limit</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num">75%</div>
+      <div class="stat-label">Files never<br>analyzed</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num">512</div>
+      <div class="stat-label">Files in demo<br>monorepo MR</div>
+    </div>
+  </div>
+</section>
+
+<!-- THE SOLUTION -->
+<div class="divider"></div>
+
+<section class="section" id="solution">
+  <div class="label reveal" style="color: var(--orange);">The Solution</div>
+  <h2 class="reveal">Intelligent chunking.<br><em>Specialist processing.</em><br>Unified aggregation.</h2>
+  <p class="lead reveal">
+    Mr Ninja breaks oversized MRs into optimally-sized chunks, routes each to the right specialist agent 
+    (Security Analyst, Code Reviewer, Dependency Analyzer), maintains context across chunks, and 
+    synthesizes a unified analysis report.
+  </p>
+
+  <div class="flow reveal" style="margin-top: 56px;">
+    <div class="flow-step">
+      <div class="flow-box">
+        <div class="flow-icon">🔍</div>
+        <div class="flow-title">1. Detect</div>
+        <div class="flow-desc">Estimate token footprint. If >150k, activate chunking</div>
+      </div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">
+      <div class="flow-box">
+        <div class="flow-icon">📋</div>
+        <div class="flow-title">2. Plan</div>
+        <div class="flow-desc">Classify files by priority, bin-pack into ~70k chunks</div>
+      </div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">
+      <div class="flow-box">
+        <div class="flow-icon">🤖</div>
+        <div class="flow-title">3. Process</div>
+        <div class="flow-desc">Route to specialist agents based on file type</div>
+      </div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">
+      <div class="flow-box">
+        <div class="flow-icon">🔗</div>
+        <div class="flow-title">4. Context</div>
+        <div class="flow-desc">Carry critical findings across chunks</div>
+      </div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">
+      <div class="flow-box">
+        <div class="flow-icon">📊</div>
+        <div class="flow-title">5. Aggregate</div>
+        <div class="flow-desc">Deduplicate, rank, generate unified report</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="terminal reveal">
+    <div class="terminal-bar">
+      <div class="t-dot r"></div><div class="t-dot y"></div><div class="t-dot g"></div>
+      <span class="terminal-label">mr_analysis.log</span>
+    </div>
+    <div class="terminal-body">
+<span class="t-info">INFO</span>  Analyzing MR #42: monorepo-refactor
+<span class="t-info">INFO</span>  Estimated tokens: <span class="t-err">847,392</span>
+<span class="t-warn">WARN</span>  Exceeds context limit → activating chunking
+<span class="t-info">INFO</span>  Classified 512 files into 6 priority tiers
+<span class="t-info">INFO</span>  Created 12 chunks (avg: 70,616 tokens)
+
+<span class="t-ok">✓</span> Chunk 1/12: Security scan complete (8 CRITICAL)
+<span class="t-ok">✓</span> Chunk 2/12: Code review complete (15 HIGH)
+<span class="t-ok">✓</span> Chunk 3/12: Dependency check complete
+
+<span class="t-comment"># Cross-chunk context maintained...</span>
+<span class="t-ok">✓</span> Chunk 12/12: Final aggregation
+
+<span class="t-info">INFO</span>  <span class="t-path">Report posted to MR #42</span>
+<span class="t-ok">✓</span> Analysis complete: <span class="t-err">45 findings</span>, Risk: <span class="t-err">CRITICAL</span>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<div class="divider"></div>
+
+<section class="section" id="how-it-works">
+  <div class="label reveal" style="color: var(--blue);">How It Works</div>
+  <h2 class="reveal">Smart prioritization.<br><em>Optimal chunking.</em><br>Context preservation.</h2>
+  <p class="lead reveal">
+    Files are classified into 6 priority tiers. Security-critical files like <span class="inline-code">.env</span>, 
+    <span class="inline-code">Dockerfile</span>, and auth handlers are analyzed first. Generated files are skipped. 
+    Chunks target 70k tokens with cross-chunk context maintained throughout.
+  </p>
+
+  <div class="problem-trinity reveal" style="margin-top: 56px;">
+    <div class="problem-card" style="border-top-color: var(--red);" data-num="P1">
+      <p class="problem-num" style="color: var(--red);">Priority 1</p>
+      <h3>Security-Critical</h3>
+      <p><span class="inline-code">.env</span>, <span class="inline-code">Dockerfile</span>, <span class="inline-code">*.tf</span>, <span class="inline-code">auth/*</span>, <span class="inline-code">*.pem</span> analyzed first with Security Analyst</p>
+    </div>
+    <div class="problem-card" style="border-top-color: var(--amber);" data-num="P2">
+      <p class="problem-num" style="color: var(--amber);">Priority 2-4</p>
+      <h3>Entry Points & Logic</h3>
+      <p><span class="inline-code">main.*</span>, <span class="inline-code">routes/*</span>, <span class="inline-code">api/*</span>, source files analyzed with Code Reviewer</p>
+    </div>
+    <div class="problem-card" style="border-top-color: var(--muted);" data-num="P5">
+      <p class="problem-num" style="color: var(--muted);">Priority 5-6</p>
+      <h3>Tests & Generated</h3>
+      <p><span class="inline-code">tests/*</span> analyzed last. <span class="inline-code">node_modules/*</span>, <span class="inline-code">*.min.js</span> skipped entirely</p>
+    </div>
+  </div>
+
+  <div style="margin-top: 56px; padding: 32px; background: rgba(255,107,43,0.05); border: 1px solid rgba(255,107,43,0.2); border-left: 4px solid var(--orange); border-radius: 12px;" class="reveal">
+    <p style="font-family: 'DM Mono', monospace; font-size: 12px; color: var(--orange); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 12px;">CROSS-CHUNK CONTEXT</p>
+    <p style="font-size: 16px; color: #9090b8; line-height: 1.7;">
+      After each chunk, a compact summary is carried forward: CRITICAL and HIGH findings persist, 
+      open questions are tracked, and key exports are noted. Maximum overhead: <strong style="color: var(--orange);">2,000 tokens.</strong>
+    </p>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<div class="divider"></div>
+
+<section class="section" id="features">
+  <div class="label reveal" style="color: var(--green);">Features</div>
+  <h2 class="reveal">Built for <em>enterprise scale.</em><br>Native to <em>GitLab.</em></h2>
+  <p class="lead reveal">
+    Every feature designed to handle real monorepo complexity with GitLab-native tooling.
+  </p>
+
+  <div class="features-grid">
+    <div class="feature-card reveal">
+      <div class="feature-icon">🎯</div>
+      <h3>Smart Prioritization</h3>
+      <p>Security-critical files analyzed first. Test files last. Generated files skipped. Zero manual configuration.</p>
+    </div>
+
+    <div class="feature-card reveal reveal-delay-1">
+      <div class="feature-icon">🧩</div>
+      <h3>Intelligent Chunking</h3>
+      <p>Bin-packing algorithm creates optimal ~70k token chunks while respecting file boundaries and priorities.</p>
+    </div>
+
+    <div class="feature-card reveal reveal-delay-2">
+      <div class="feature-icon">🤖</div>
+      <h3>Specialist Agents</h3>
+      <p>Security Analyst for P1 files, Code Reviewer for logic, Dependency Analyzer for manifests.</p>
+    </div>
+
+    <div class="feature-card reveal reveal-delay-3">
+      <div class="feature-icon">🔗</div>
+      <h3>Context Carryover</h3>
+      <p>Critical findings and open questions persist across chunks via compact summaries.</p>
+    </div>
+
+    <div class="feature-card reveal">
+      <div class="feature-icon">📊</div>
+      <h3>Unified Aggregation</h3>
+      <p>Deduplicates findings, ranks by severity, calculates risk score, generates single report.</p>
+    </div>
+
+    <div class="feature-card reveal reveal-delay-1">
+      <div class="feature-icon">💬</div>
+      <h3>GitLab Native</h3>
+      <p>Posts directly as MR comments, integrates with CI/CD, uses GitLab API throughout.</p>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="section">
+  <div class="cta-section reveal">
+    <h2>Ready to analyze enterprise-scale MRs?</h2>
+    <p class="lead">Get started with Mr Ninja and never hit the context limit again.</p>
+    <div class="hero-cta">
+      <a href="https://gitlab.com/your-group/mr-ninja" class="btn btn-primary" target="_blank" rel="noopener noreferrer">View on GitLab →</a>
+      <a href="docs.html" class="btn btn-secondary">Read Documentation</a>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<footer>
+  <div class="logo">Mr <span>Ninja</span></div>
+  <p>Built for the <strong style="color: var(--orange);">GitLab AI Hackathon 2026</strong></p>
+  <p style="margin-top: 16px;">
+    <a href="docs.html">Documentation</a> · 
+    <a href="https://gitlab.com/your-group/mr-ninja" target="_blank" rel="noopener noreferrer">GitLab</a> · 
+    <a href="https://gitlab.com/your-group/mr-ninja/-/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">MIT License</a>
+  </p>
+  <p style="margin-top: 24px; font-size: 11px; letter-spacing: 0.1em;">
+    You Orchestrate · AI Accelerates · Nothing Gets Left Behind
+  </p>
+</footer>
+
+</div><!-- end z1 -->
+
+<script>
+  // Reveal on scroll
+  const reveals = document.querySelectorAll('.reveal');
+  const obs = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+        obs.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.1 });
+  reveals.forEach(r => obs.observe(r));
+</script>
+</body>
+</html>

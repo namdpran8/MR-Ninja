@@ -1,0 +1,234 @@
+# Mr Ninja Agent Flow Configuration
+#
+# Defines the phased processing pipeline for the Large Context Orchestrator.
+# This YAML flow is used by the orchestrator to determine the execution order
+# and configuration of each analysis phase.
+#
+# Flow: Detect -> Plan -> Process -> Summarize -> Aggregate -> Report
+
+flow:
+  name: "mr-ninja-analysis"
+  version: "1.0.0"
+  description: "Large Context Wrapper Agent for GitLab Duo"
+
+  # Global settings
+  settings:
+    # Token budget thresholds
+    chunking_trigger_tokens: 150000
+    chunk_target_tokens: 70000
+    chunk_max_tokens: 100000
+    chars_per_token: 4
+
+    # Processing behavior
+    skip_generated_files: true
+    post_mr_comments: true
+    max_retries: 2
+    retry_delay_seconds: 2
+
+  # Pipeline phases (executed in order)
+  phases:
+
+    # Phase 1: Detection
+    # Determines if the input exceeds the context limit
+    - name: "detect"
+      description: "Estimate token footprint and decide if chunking is needed"
+      agent: "token_estimator"
+      inputs:
+        - "mr_diff_content"
+      outputs:
+        - "total_tokens"
+        - "chunking_required"
+      timeout_seconds: 30
+
+    # Phase 2: Planning
+    # Splits files into priority-ordered chunks
+    - name: "plan"
+      description: "Classify files by priority and build chunk plan"
+      agent: "chunk_planner"
+      inputs:
+        - "file_entries"
+        - "total_tokens"
+      outputs:
+        - "chunk_plan"
+      config:
+        priority_order:
+          - tier: 1
+            name: "security_critical"
+            description: "Environment files, secrets, Dockerfiles, IaC, auth modules"
+            patterns:
+              - "*.env"
+              - "*.env.*"
+              - "secrets.*"
+              - "auth/*"
+              - "Dockerfile*"
+              - "*.tf"
+              - "requirements*.txt"
+              - "package.json"
+              - "*.pem"
+              - "*.key"
+              - ".gitlab-ci.yml"
+          - tier: 2
+            name: "entry_points"
+            description: "Main application files, routes, API endpoints"
+            patterns:
+              - "main.*"
+              - "app.*"
+              - "index.*"
+              - "server.*"
+              - "routes/*"
+              - "api/*"
+          - tier: 3
+            name: "changed_files"
+            description: "All other directly changed files"
+          - tier: 4
+            name: "shared_modules"
+            description: "Modules imported by multiple changed files"
+          - tier: 5
+            name: "test_files"
+            description: "Test and spec files (process last)"
+            patterns:
+              - "tests/*"
+              - "test_*"
+              - "*_test.*"
+              - "*.spec.*"
+              - "*.test.*"
+          - tier: 6
+            name: "generated_files"
+            description: "Generated, lock, or minified files (skip)"
+            action: "skip"
+            patterns:
+              - "package-lock.json"
+              - "yarn.lock"
+              - "*.min.js"
+              - "*.map"
+              - "dist/*"
+
+    # Phase 3: Processing
+    # Runs specialist agents on each chunk
+    - name: "process"
+      description: "Run specialist agents on each chunk sequentially"
+      agent: "chunk_processor"
+      loop_over: "chunk_plan.chunks"
+      inputs:
+        - "chunk"
+        - "cross_chunk_context"
+      outputs:
+        - "chunk_summary"
+      specialists:
+        - name: "security_analyst"
+          trigger_on:
+            - "security_critical"
+            - "mixed"
+          description: "Scans for vulnerabilities, hardcoded secrets, injection risks"
+          checks:
+            - "hardcoded_credentials"
+            - "sql_injection"
+            - "xss_vulnerabilities"
+            - "unsafe_eval"
+            - "shell_injection"
+            - "ssl_verification"
+            - "private_keys_in_source"
+
+        - name: "code_reviewer"
+          trigger_on:
+            - "code_review"
+            - "mixed"
+          description: "Evaluates code quality, patterns, and complexity"
+          checks:
+            - "bare_except_clauses"
+            - "debug_statements"
+            - "todo_fixme_comments"
+            - "long_functions"
+            - "global_state"
+
+        - name: "dependency_analyzer"
+          trigger_on:
+            - "dependency"
+          description: "Checks dependency risks and version constraints"
+          checks:
+            - "wildcard_versions"
+            - "deprecated_packages"
+            - "broad_version_ranges"
+
+    # Phase 4: Summarization
+    # Builds cross-chunk context after each chunk
+    - name: "summarize"
+      description: "Generate compact cross-chunk context summary"
+      agent: "context_summarizer"
+      inputs:
+        - "chunk_summary"
+        - "prior_context"
+      outputs:
+        - "cross_chunk_context"
+      config:
+        max_context_tokens: 2000
+        always_carry:
+          - "critical_findings"
+          - "high_findings"
+          - "open_questions"
+          - "key_exports"
+        compress_after_chunks: 3
+        drop_info_findings_after_chunks: 2
+
+    # Phase 5: Aggregation
+    # Combines all chunk results into a single report
+    - name: "aggregate"
+      description: "Deduplicate findings, rank by severity, build final report"
+      agent: "result_aggregator"
+      inputs:
+        - "all_chunk_summaries"
+        - "chunk_plan"
+      outputs:
+        - "analysis_report"
+        - "markdown_report"
+      config:
+        deduplication:
+          key: ["file", "title"]
+          keep: "highest_severity"
+        severity_order:
+          - "CRITICAL"
+          - "HIGH"
+          - "MEDIUM"
+          - "LOW"
+          - "INFO"
+        risk_scoring:
+          critical_weight: 10
+          high_weight: 5
+          medium_weight: 2
+          low_weight: 1
+          info_weight: 0
+          max_score: 100
+
+    # Phase 6: Reporting
+    # Posts the final report to the MR
+    - name: "report"
+      description: "Post aggregated report as MR comment"
+      agent: "gitlab_reporter"
+      inputs:
+        - "markdown_report"
+        - "mr_id"
+        - "project_id"
+      outputs:
+        - "mr_note_id"
+      config:
+        post_as: "threaded_note"
+        include_sections:
+          - "executive_summary"
+          - "findings_table"
+          - "unresolved_questions"
+          - "recommendations"
+          - "chunk_details_collapsible"
+
+  # Cross-chunk state schema
+  cross_chunk_state:
+    description: "State carried between chunks for continuity"
+    schema:
+      chunk_id: "int"
+      total_chunks: "int"
+      files_processed: "list[str]"
+      findings:
+        - file: "str"
+          severity: "str"
+          summary: "str"
+      imports_exported: "list[str]"
+      open_questions: "list[str]"

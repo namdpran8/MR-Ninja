@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://your-group.gitlab.io/mr-ninja/sitemap.xml

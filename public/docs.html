@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Mr Ninja Documentation - Complete guide to using the Large Context Orchestrator for GitLab Duo">
+    <title>Documentation | Mr Ninja</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="docs-styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-brand">
+                <span class="ninja-icon">🥷</span>
+                <a href="index.html" class="brand-text">Mr Ninja</a>
+            </div>
+            <div class="nav-links">
+                <a href="index.html#features">Features</a>
+                <a href="index.html#how-it-works">How It Works</a>
+                <a href="index.html#demo">Demo</a>
+                <a href="docs.html" class="active">Docs</a>
+                <a href="https://gitlab.com/your-group/mr-ninja" class="btn-secondary" target="_blank" rel="noopener noreferrer">
+                    GitLab
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="docs-layout">
+        <!-- Sidebar -->
+        <aside class="docs-sidebar">
+            <nav class="docs-nav">
+                <div class="nav-section">
+                    <div class="nav-title">Getting Started</div>
+                    <a href="#introduction" class="nav-link">Introduction</a>
+                    <a href="#installation" class="nav-link">Installation</a>
+                    <a href="#quick-start" class="nav-link">Quick Start</a>
+                    <a href="#configuration" class="nav-link">Configuration</a>
+                </div>
+                <div class="nav-section">
+                    <div class="nav-title">Core Concepts</div>
+                    <a href="#architecture" class="nav-link">Architecture</a>
+                    <a href="#chunking" class="nav-link">Chunking Strategy</a>
+                    <a href="#priority-tiers" class="nav-link">Priority Tiers</a>
+                    <a href="#specialist-agents" class="nav-link">Specialist Agents</a>
+                    <a href="#cross-chunk" class="nav-link">Cross-Chunk Context</a>
+                </div>
+                <div class="nav-section">
+                    <div class="nav-title">Usage</div>
+                    <a href="#cli" class="nav-link">Command Line</a>
+                    <a href="#python-api" class="nav-link">Python API</a>
+                    <a href="#rest-api" class="nav-link">REST API</a>
+                    <a href="#ci-integration" class="nav-link">CI/CD Integration</a>
+                </div>
+                <div class="nav-section">
+                    <div class="nav-title">Reference</div>
+                    <a href="#api-reference" class="nav-link">API Reference</a>
+                    <a href="#configuration-options" class="nav-link">Configuration Options</a>
+                    <a href="#findings" class="nav-link">Finding Types</a>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="docs-content">
+            <section id="introduction">
+                <h1>Introduction</h1>
+                <p class="lead">Mr Ninja is a Large Context Wrapper Agent that solves GitLab Duo's ~200,000 token context limit by intelligently chunking and processing oversized merge requests.</p>
+                
+                <h2>What does it do?</h2>
+                <p>When analyzing large merge requests (500+ files, 800k+ tokens), Mr Ninja:</p>
+                <ul>
+                    <li>Estimates the total token footprint</li>
+                    <li>Classifies files by priority (security-critical first)</li>
+                    <li>Chunks files into ~70k-token groups</li>
+                    <li>Routes each chunk to specialist agents (Security, Code Review, Dependencies)</li>
+                    <li>Maintains context across chunks with compact summaries</li>
+                    <li>Aggregates and deduplicates findings into a unified report</li>
+                </ul>
+
+                <div class="info-box">
+                    <strong>💡 Why Mr Ninja?</strong>
+                    <p>GitLab Duo can't natively handle MRs exceeding 200k tokens. Mr Ninja works around this by breaking large MRs into chunks, processing them sequentially, and reassembling the results—all while preserving critical context.</p>
+                </div>
+            </section>
+
+            <section id="installation">
+                <h1>Installation</h1>
+                
+                <h2>Prerequisites</h2>
+                <ul>
+                    <li>Python 3.11 or higher</li>
+                    <li>pip package manager</li>
+                    <li>(Optional) Docker for containerized deployment</li>
+                </ul>
+
+                <h2>Install from Source</h2>
+                <pre><code>git clone https://gitlab.com/your-group/mr-ninja.git
+cd mr-ninja
+pip install -r requirements.txt</code></pre>
+
+                <h2>Docker Installation</h2>
+                <pre><code>docker pull registry.gitlab.com/your-group/mr-ninja:latest
+docker run -p 8000:8000 -e GITLAB_TOKEN=glpat-xxx registry.gitlab.com/your-group/mr-ninja</code></pre>
+
+                <h2>Verify Installation</h2>
+                <pre><code>python -m pytest tests/ -v</code></pre>
+            </section>
+
+            <section id="quick-start">
+                <h1>Quick Start</h1>
+                
+                <h2>Run the Demo (No GitLab Required)</h2>
+                <p>The fastest way to see Mr Ninja in action:</p>
+                <pre><code>python -m demo.simulate_large_mr --files 512</code></pre>
+                <p>This generates a synthetic 512-file MR and runs the full analysis pipeline.</p>
+
+                <h2>Analyze a Real GitLab MR</h2>
+                <pre><code>export GITLAB_TOKEN="glpat-xxxxxxxxxxxxxxxxxxxx"
+
+python -c "
+from agents.orchestrator import Orchestrator
+
+orchestrator = Orchestrator(
+    gitlab_url='https://gitlab.com',
+    gitlab_token='$GITLAB_TOKEN',
+    post_comments=True,
+)
+report = orchestrator.analyze_mr('your-group/your-project', 42)
+print(f'Risk: {report.overall_risk}, Findings: {len(report.findings)}')
+"</code></pre>
+
+                <h2>Start the API Server</h2>
+                <pre><code>uvicorn app:app --host 0.0.0.0 --port 8000
+
+# Then analyze via HTTP
+curl -X POST http://localhost:8000/analyze \
+  -H "Content-Type: application/json" \
+  -d '{"mr_url": "https://gitlab.com/group/project/-/merge_requests/42", "gitlab_token": "glpat-xxx"}'</code></pre>
+            </section>
+
+            <section id="configuration">
+                <h1>Configuration</h1>
+                
+                <h2>Environment Variables</h2>
+                <table class="config-table">
+                    <thead>
+                        <tr>
+                            <th>Variable</th>
+                            <th>Description</th>
+                            <th>Default</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>GITLAB_TOKEN</code></td>
+                            <td>GitLab personal access token (required for real MR analysis)</td>
+                            <td>None</td>
+                        </tr>
+                        <tr>
+                            <td><code>GITLAB_URL</code></td>
+                            <td>GitLab instance URL</td>
+                            <td>https://gitlab.com</td>
+                        </tr>
+                        <tr>
+                            <td><code>MAX_CHUNK_TOKENS</code></td>
+                            <td>Target tokens per chunk</td>
+                            <td>70000</td>
+                        </tr>
+                        <tr>
+                            <td><code>CHUNK_THRESHOLD</code></td>
+                            <td>Token count that triggers chunking</td>
+                            <td>150000</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h2>Orchestrator Options</h2>
+                <pre><code>orchestrator = Orchestrator(
+    gitlab_url='https://gitlab.com',
+    gitlab_token='glpat-xxx',
+    post_comments=True,          # Post report as MR comment
+    max_chunk_tokens=70000,      # Target chunk size
+    chunk_threshold=150000,      # When to activate chunking
+    skip_generated=True,         # Skip lock files, dist/, etc.
+)</code></pre>
+            </section>
+
+            <section id="architecture">
+                <h1>Architecture</h1>
+                
+                <h2>System Overview</h2>
+                <p>Mr Ninja is built as a modular pipeline with five core components:</p>
+                
+                <div class="architecture-grid">
+                    <div class="arch-card">
+                        <h3>1. Token Estimator</h3>
+                        <p>Estimates token count using <code>len(text) / 4</code> heuristic with content-type multipliers.</p>
+                    </div>
+                    <div class="arch-card">
+                        <h3>2. Chunk Planner</h3>
+                        <p>Classifies files into priority tiers (P1-P6), sorts, and bin-packs into ~70k-token chunks.</p>
+                    </div>
+                    <div class="arch-card">
+                        <h3>3. Chunk Processor</h3>
+                        <p>Routes chunks to specialist agents (Security, Code Review, Dependencies) based on composition.</p>
+                    </div>
+                    <div class="arch-card">
+                        <h3>4. Summarizer</h3>
+                        <p>Generates compact cross-chunk context summaries with critical findings and open questions.</p>
+                    </div>
+                    <div class="arch-card">
+                        <h3>5. Aggregator</h3>
+                        <p>Deduplicates findings, ranks by severity, calculates risk score, and generates Markdown report.</p>
+                    </div>
+                </div>
+
+                <h2>Data Flow</h2>
+                <pre class="ascii-diagram">
+MR Request
+    |
+    v
+Orchestrator
+    |
+    +---> Token Estimator --> Check threshold
+    |
+    +---> Chunk Planner --> ChunkPlan (files grouped by priority)
+    |
+    +---> For each chunk:
+            |
+            +---> Chunk Processor --> Specialist Agents
+            |
+            +---> Summarizer --> ChunkSummary (context carryover)
+    |
+    +---> Aggregator --> Final Report
+    |
+    v
+Post to GitLab MR
+                </pre>
+            </section>
+
+            <section id="chunking">
+                <h1>Chunking Strategy</h1>
+                
+                <p>Mr Ninja uses a greedy bin-packing algorithm to create optimally-sized chunks:</p>
+                
+                <h2>Algorithm</h2>
+                <ol>
+                    <li>Classify all files into priority tiers (P1-P6)</li>
+                    <li>Skip P6 files (generated/lock files)</li>
+                    <li>Sort remaining files by (priority, path) for deterministic ordering</li>
+                    <li>Iterate files, adding to current chunk until target exceeded</li>
+                    <li>Oversized files (>target_tokens) get their own chunk</li>
+                    <li>Assign each chunk a recommended specialist agent</li>
+                </ol>
+
+                <h2>Chunk Sizing</h2>
+                <ul>
+                    <li><strong>Target:</strong> 70,000 tokens per chunk</li>
+                    <li><strong>Range:</strong> 40,000 -- 100,000 tokens</li>
+                    <li><strong>Hard cap:</strong> Never exceed 100,000 tokens</li>
+                </ul>
+
+                <div class="warning-box">
+                    <strong>⚠ Warning:</strong> Files larger than 100k tokens are processed individually but may still exceed GitLab Duo's limit. Consider refactoring such files.
+                </div>
+            </section>
+
+            <section id="priority-tiers">
+                <h1>Priority Tiers</h1>
+                
+                <p>Files are classified into 6 priority tiers to ensure critical files are analyzed first:</p>
+                
+                <table class="priority-table">
+                    <thead>
+                        <tr>
+                            <th>Tier</th>
+                            <th>Category</th>
+                            <th>Examples</th>
+                            <th>Order</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="badge-p1">P1</span></td>
+                            <td>Security-critical</td>
+                            <td><code>.env</code>, <code>Dockerfile</code>, <code>*.tf</code>, <code>auth/*</code>, <code>*.pem</code>, <code>*.key</code></td>
+                            <td>First</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge-p2">P2</span></td>
+                            <td>Entry points</td>
+                            <td><code>main.*</code>, <code>app.*</code>, <code>routes/*</code>, <code>api/*</code>, <code>server.*</code></td>
+                            <td>Second</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge-p3">P3</span></td>
+                            <td>Changed files</td>
+                            <td>All other source files with diff hunks</td>
+                            <td>Third</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge-p4">P4</span></td>
+                            <td>Shared modules</td>
+                            <td>Files imported by multiple changed files</td>
+                            <td>Fourth</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge-p5">P5</span></td>
+                            <td>Test files</td>
+                            <td><code>tests/*</code>, <code>*_test.*</code>, <code>*.spec.*</code>, <code>conftest.py</code></td>
+                            <td>Last</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge-p6">P6</span></td>
+                            <td>Generated/lock</td>
+                            <td><code>package-lock.json</code>, <code>*.min.js</code>, <code>dist/*</code>, <code>node_modules/*</code></td>
+                            <td>Skipped</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <section id="specialist-agents">
+                <h1>Specialist Agents</h1>
+                
+                <p>Each chunk is routed to one or more specialist agents based on its file composition:</p>
+                
+                <div class="agent-cards">
+                    <div class="agent-card">
+                        <h3>🔒 Security Analyst</h3>
+                        <p><strong>Triggers:</strong> P1 security-critical files</p>
+                        <p><strong>Detects:</strong></p>
+                        <ul>
+                            <li>Hardcoded secrets and credentials</li>
+                            <li>SQL injection vulnerabilities</li>
+                            <li>XSS (innerHTML, dangerouslySetInnerHTML)</li>
+                            <li>Unsafe eval()/exec() usage</li>
+                            <li>Shell injection (subprocess with shell=True)</li>
+                            <li>SSL verification disabled</li>
+                            <li>Private keys in source code</li>
+                            <li>Unsafe deserialization</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="agent-card">
+                        <h3>⚙️ Code Reviewer</h3>
+                        <p><strong>Triggers:</strong> P2-P4 logic files</p>
+                        <p><strong>Detects:</strong></p>
+                        <ul>
+                            <li>Bare except/catch clauses</li>
+                            <li>Debug print/console.log statements</li>
+                            <li>TODO/FIXME comments</li>
+                            <li>Global/nonlocal variable usage</li>
+                            <li>Long sleep/delay calls</li>
+                            <li>Code duplication</li>
+                            <li>Complexity issues</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="agent-card">
+                        <h3>📦 Dependency Analyzer</h3>
+                        <p><strong>Triggers:</strong> Package manifests</p>
+                        <p><strong>Detects:</strong></p>
+                        <ul>
+                            <li>Wildcard version specifiers (<code>"*"</code>)</li>
+                            <li>Overly broad version ranges (<code>>=0.</code>)</li>
+                            <li>Deprecated packages (lodash, moment, request)</li>
+                            <li>Known security vulnerabilities</li>
+                            <li>Missing lockfiles</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <section id="cross-chunk">
+                <h1>Cross-Chunk Context</h1>
+                
+                <p>To maintain continuity across chunks, Mr Ninja generates compact summaries after each chunk:</p>
+                
+                <h2>Context Structure</h2>
+                <pre><code>=== CROSS-CHUNK CONTEXT (read-only) ===
+Chunks completed: 2/6
+Files analyzed: 85
+Critical/High findings: 3
+  [CRITICAL] auth/handler.py:12 -- Hardcoded secret
+  [HIGH] payments/service.py:45 -- Unsafe eval()
+Open questions:
+  - Verify import 'auth.validator' -- not found in this chunk
+Key exports: auth.py:AuthService, utils.py:validate
+=== END CONTEXT ===</code></pre>
+
+                <h2>Carryover Rules</h2>
+                <ul>
+                    <li><strong>CRITICAL</strong> and <strong>HIGH</strong> findings are always carried forward</li>
+                    <li><strong>MEDIUM</strong> findings are carried if space allows</li>
+                    <li><strong>LOW/INFO</strong> findings are dropped after 2 chunks</li>
+                    <li>Open questions persist until explicitly resolved</li>
+                    <li>Maximum context overhead: 2,000 tokens</li>
+                </ul>
+            </section>
+
+            <section id="cli">
+                <h1>Command Line Usage</h1>
+                
+                <h2>Demo Simulation</h2>
+                <pre><code># Basic demo (512 files)
+python -m demo.simulate_large_mr
+
+# Custom file count
+python -m demo.simulate_large_mr --files 1000
+
+# Save report
+python -m demo.simulate_large_mr --output report.md</code></pre>
+
+                <h2>Generate Test Repository</h2>
+                <pre><code>python -m demo.generate_large_repo --output-dir ./sample_repo --files 512</code></pre>
+
+                <h2>Run Tests</h2>
+                <pre><code># All tests
+python -m pytest tests/ -v
+
+# With coverage
+python -m pytest tests/ --cov=core --cov=agents --cov-report=html</code></pre>
+            </section>
+
+            <section id="python-api">
+                <h1>Python API</h1>
+                
+                <h2>Orchestrator</h2>
+                <pre><code>from agents.orchestrator import Orchestrator
+
+orchestrator = Orchestrator(
+    gitlab_url='https://gitlab.com',
+    gitlab_token='glpat-xxx',
+    post_comments=True,
+)
+
+# Analyze MR
+report = orchestrator.analyze_mr(
+    project='your-group/your-project',
+    mr_iid=42,
+)
+
+# Access results
+print(f'Risk: {report.overall_risk}')
+print(f'Findings: {len(report.findings)}')
+for finding in report.findings:
+    print(f'[{finding.severity}] {finding.file}:{finding.line} -- {finding.title}')</code></pre>
+
+                <h2>Chunk Planner</h2>
+                <pre><code>from agents.chunk_planner import ChunkPlanner
+from gitlab.gitlab_client import GitLabClient
+
+client = GitLabClient(url='https://gitlab.com', token='glpat-xxx')
+planner = ChunkPlanner(max_chunk_tokens=70000)
+
+# Get MR diffs
+mr_data = client.get_mr_diff('your-group/your-project', 42)
+
+# Plan chunks
+chunk_plan = planner.plan(mr_data)
+print(f'Created {len(chunk_plan.chunks)} chunks')
+for i, chunk in enumerate(chunk_plan.chunks):
+    print(f'Chunk {i+1}: {chunk.file_count} files, ~{chunk.estimated_tokens} tokens')</code></pre>
+            </section>
+
+            <section id="rest-api">
+                <h1>REST API</h1>
+                
+                <h2>Endpoints</h2>
+                
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method method-get">GET</span>
+                        <span class="path">/health</span>
+                    </div>
+                    <p>Health check endpoint</p>
+                    <div class="example">
+                        <strong>Response:</strong>
+                        <pre><code>{"status": "ok", "version": "1.0.0"}</code></pre>
+                    </div>
+                </div>
+
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method method-post">POST</span>
+                        <span class="path">/analyze</span>
+                    </div>
+                    <p>Analyze a GitLab MR</p>
+                    <div class="example">
+                        <strong>Request:</strong>
+                        <pre><code>{
+  "mr_url": "https://gitlab.com/group/project/-/merge_requests/42",
+  "gitlab_token": "glpat-xxxxxxxxxxxxxxxxxxxx",
+  "max_chunk_tokens": 70000,
+  "post_comment": true
+}</code></pre>
+                        <strong>Response:</strong>
+                        <pre><code>{
+  "status": "ok",
+  "mr_id": "42",
+  "chunks_processed": 6,
+  "total_findings": 45,
+  "critical_findings": 8,
+  "overall_risk": "CRITICAL",
+  "report_markdown": "# Mr Ninja Analysis Report\n...",
+  "processing_time_seconds": 2.3
+}</code></pre>
+                    </div>
+                </div>
+
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method method-post">POST</span>
+                        <span class="path">/demo</span>
+                    </div>
+                    <p>Run demo simulation (no GitLab token required)</p>
+                    <div class="example">
+                        <strong>Request:</strong>
+                        <pre><code>{"files": 512}</code></pre>
+                    </div>
+                </div>
+            </section>
+
+            <section id="ci-integration">
+                <h1>CI/CD Integration</h1>
+                
+                <h2>GitLab CI Example</h2>
+                <pre><code>mr-ninja:analyze:
+  stage: test
+  image: python:3.11-slim
+  before_script:
+    - pip install -r requirements.txt
+  script:
+    - |
+      python3 -c "
+      import os
+      from agents.orchestrator import Orchestrator
+      orchestrator = Orchestrator(
+          gitlab_url=os.environ['CI_SERVER_URL'],
+          gitlab_token=os.environ['GITLAB_TOKEN'],
+          post_comments=True,
+      )
+      report = orchestrator.analyze_mr(
+          os.environ['CI_PROJECT_PATH'],
+          int(os.environ['CI_MERGE_REQUEST_IID']),
+      )
+      print(f'Analysis: {len(report.findings)} findings')
+      if report.overall_risk in ['CRITICAL', 'HIGH']:
+          exit(1)  # Fail pipeline
+      "
+  rules:
+    - if: '$CI_MERGE_REQUEST_IID && $GITLAB_TOKEN'
+  allow_failure: true</code></pre>
+
+                <h2>GitHub Actions Example</h2>
+                <pre><code>name: Mr Ninja Analysis
+on: [pull_request]
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - run: pip install -r requirements.txt
+      - run: |
+          python -m demo.simulate_large_mr --output report.md
+      - uses: actions/upload-artifact@v3
+        with:
+          name: mr-ninja-report
+          path: report.md</code></pre>
+            </section>
+
+            <section id="api-reference">
+                <h1>API Reference</h1>
+                
+                <h2>Classes</h2>
+                
+                <details class="api-details">
+                    <summary><code>Orchestrator</code></summary>
+                    <p>Main orchestrator class that coordinates the analysis pipeline.</p>
+                    <pre><code>class Orchestrator:
+    def __init__(
+        self,
+        gitlab_url: str,
+        gitlab_token: str,
+        post_comments: bool = False,
+        max_chunk_tokens: int = 70000,
+        chunk_threshold: int = 150000,
+    ):
+        ...
+
+    def analyze_mr(
+        self,
+        project: str,
+        mr_iid: int,
+    ) -> AnalysisReport:
+        """Analyze a GitLab merge request."""
+        ...</code></pre>
+                </details>
+
+                <details class="api-details">
+                    <summary><code>ChunkPlanner</code></summary>
+                    <p>Plans chunk boundaries based on file priorities and token counts.</p>
+                    <pre><code>class ChunkPlanner:
+    def plan(self, mr_data: MRData) -> ChunkPlan:
+        """Generate chunk plan for an MR."""
+        ...</code></pre>
+                </details>
+
+                <details class="api-details">
+                    <summary><code>ChunkProcessor</code></summary>
+                    <p>Processes individual chunks through specialist agents.</p>
+                    <pre><code>class ChunkProcessor:
+    def process_chunk(
+        self,
+        chunk: Chunk,
+        cross_chunk_context: str,
+    ) -> ChunkSummary:
+        """Process a single chunk."""
+        ...</code></pre>
+                </details>
+            </section>
+
+            <section id="configuration-options">
+                <h1>Configuration Options</h1>
+                
+                <table class="config-table">
+                    <thead>
+                        <tr>
+                            <th>Option</th>
+                            <th>Type</th>
+                            <th>Default</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>max_chunk_tokens</code></td>
+                            <td>int</td>
+                            <td>70000</td>
+                            <td>Target tokens per chunk</td>
+                        </tr>
+                        <tr>
+                            <td><code>chunk_threshold</code></td>
+                            <td>int</td>
+                            <td>150000</td>
+                            <td>Token count that triggers chunking</td>
+                        </tr>
+                        <tr>
+                            <td><code>post_comments</code></td>
+                            <td>bool</td>
+                            <td>False</td>
+                            <td>Post analysis as MR comment</td>
+                        </tr>
+                        <tr>
+                            <td><code>skip_generated</code></td>
+                            <td>bool</td>
+                            <td>True</td>
+                            <td>Skip P6 generated files</td>
+                        </tr>
+                        <tr>
+                            <td><code>verbose</code></td>
+                            <td>bool</td>
+                            <td>False</td>
+                            <td>Enable verbose logging</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <section id="findings">
+                <h1>Finding Types</h1>
+                
+                <h2>Severity Levels</h2>
+                <ul>
+                    <li><span class="severity-critical">CRITICAL</span> -- Immediate security vulnerabilities (hardcoded secrets, SQL injection)</li>
+                    <li><span class="severity-high">HIGH</span> -- Serious issues (unsafe eval, shell injection, SSL bypass)</li>
+                    <li><span class="severity-medium">MEDIUM</span> -- Code quality issues (TODO comments, bare exceptions)</li>
+                    <li><span class="severity-low">LOW</span> -- Minor issues (debug prints, style issues)</li>
+                    <li><span class="severity-info">INFO</span> -- Informational notices</li>
+                </ul>
+
+                <h2>Risk Scoring</h2>
+                <p>Overall risk is calculated as:</p>
+                <pre><code>risk_score = sum([
+    10 * count(CRITICAL),
+    5 * count(HIGH),
+    2 * count(MEDIUM),
+    1 * count(LOW),
+])
+max_risk = 100</code></pre>
+
+                <p>Overall risk level is determined by the worst finding's severity.</p>
+            </section>
+
+            <section class="docs-footer">
+                <p>Need more help? <a href="https://gitlab.com/your-group/mr-ninja/-/issues">Open an issue</a> or check the <a href="https://gitlab.com/your-group/mr-ninja">GitLab repository</a>.</p>
+            </section>
+        </main>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <span class="ninja-icon">🥷</span>
+                    <span class="brand-text">Mr Ninja</span>
+                </div>
+                <div class="footer-info">
+                    <p>Built for the GitLab AI Hackathon 2026</p>
+                    <p>MIT License | Made with ❤️ for the GitLab community</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+    <script src="docs-script.js"></script>
+</body>
+</html>

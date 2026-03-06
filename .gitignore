@@ -5,30 +5,40 @@
 .DS_Store
 Thumbs.db
 
+
+
 # --- Python ---
 __pycache__/
 *.py[cod]
 *$py.class
+*.so
+*.egg-info/
+*.egg
 venv/
-.env
+.venv/
+env/
 
-# --- C++ ---
+# --- Environment ---
+.env
+.env.*
+!.env.example
+
+# --- Build ---
+build/
+dist/
 *.o
 *.obj
 *.exe
 *.out
 *.app
-build/
 
 # --- Java / Kotlin ---
 *.class
-*.log
 *.jar
 *.war
 *.ear
 target/
 .gradle/
-build/
 
 # --- Flutter / Dart ---
 .dart_tool/
@@ -36,4 +46,22 @@ build/
 .flutter-plugins-dependencies
 .pub-cache/
 .pub/
-build/
+
+# --- Mr Ninja specific ---
+demo/sample_repo/
+demo_report.md
+.pip-cache/
+*.log
+.pipeline/
+
+# --- Coverage / Testing ---
+.coverage
+htmlcov/
+coverage.xml
+report.xml
+tmpclaude-4cfa-cwd
+tmpclaude-3ce2-cwd
+tmpclaude-9a52-cwd
+tmpclaude-4e2b-cwd
+tmpclaude-eb4c-cwd
+tmpclaude-eb95-cwd

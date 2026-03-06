@@ -1,0 +1,206 @@
+# Mr Ninja CI/CD Pipeline
+#
+# Runs tests, linting, demo simulation, and builds the project.
+
+stages:
+  - lint
+  - test
+  - demo
+  - build
+  - deploy
+
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.pip-cache"
+  PYTHON_VERSION: "3.11"
+
+# Cache pip packages between jobs
+cache:
+  key: "${CI_COMMIT_REF_SLUG}"
+  paths:
+    - .pip-cache/
+    - .venv/
+
+# ---------------------------------------------------------------------------
+# Lint Stage
+# ---------------------------------------------------------------------------
+
+lint:flake8:
+  stage: lint
+  image: python:${PYTHON_VERSION}-slim
+  before_script:
+    - pip install flake8 --quiet
+  script:
+    - echo "Running flake8 linter..."
+    - flake8 src/mr_ninja/
+      --max-line-length=120
+      --select=E,W,F
+      --ignore=E501,W503
+      --count
+      --show-source
+      --statistics
+  allow_failure: true
+
+lint:type-check:
+  stage: lint
+  image: python:${PYTHON_VERSION}-slim
+  before_script:
+    - pip install mypy pydantic --quiet
+  script:
+    - echo "Running mypy type check..."
+    - mypy src/mr_ninja/core/models.py src/mr_ninja/core/token_estimator.py --ignore-missing-imports
+  allow_failure: true
+
+# ---------------------------------------------------------------------------
+# Test Stage
+# ---------------------------------------------------------------------------
+
+test:unit:
+  stage: test
+  image: python:${PYTHON_VERSION}-slim
+  before_script:
+    - pip install -e ".[dev]" --quiet
+  script:
+    - echo "Running unit tests..."
+    - python -m pytest tests/ -v
+      --tb=short
+      --junitxml=report.xml
+      --cov=mr_ninja
+      --cov-report=term-missing
+      --cov-report=xml:coverage.xml
+  artifacts:
+    when: always
+    reports:
+      junit: report.xml
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage.xml
+    expire_in: 30 days
+  coverage: '/TOTAL\s+\d+\s+\d+\s+(\d+%)/'
+
+test:integration:
+  stage: test
+  image: python:${PYTHON_VERSION}-slim
+  before_script:
+    - pip install -e ".[dev]" --quiet
+  script:
+    - echo "Running integration tests..."
+    - python -m pytest tests/test_orchestrator.py -v --tb=short
+  needs:
+    - test:unit
+
+# ---------------------------------------------------------------------------
+# Demo Stage
+# ---------------------------------------------------------------------------
+
+demo:simulate-mr:
+  stage: demo
+  image: python:${PYTHON_VERSION}-slim
+  before_script:
+    - pip install -e . --quiet
+  script:
+    - echo "Running demo simulation (512 files)..."
+    - mr-ninja demo --files 512 --output demo_report.md
+    - echo "Demo report generated successfully"
+    - head -50 demo_report.md
+  artifacts:
+    paths:
+      - demo_report.md
+    expire_in: 7 days
+  needs:
+    - test:unit
+  allow_failure: true
+
+# ---------------------------------------------------------------------------
+# Build Stage
+# ---------------------------------------------------------------------------
+
+build:docker:
+  stage: build
+  image: docker:24.0
+  services:
+    - docker:24.0-dind
+  variables:
+    DOCKER_TLS_CERTDIR: "/certs"
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  script:
+    - echo "Building Docker image..."
+    - docker build -t $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA .
+    - docker tag $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA $CI_REGISTRY_IMAGE:latest
+    - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
+    - docker push $CI_REGISTRY_IMAGE:latest
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+  needs:
+    - test:unit
+    - test:integration
+
+build:pypi:
+  stage: build
+  image: python:${PYTHON_VERSION}-slim
+  before_script:
+    - pip install build twine --quiet
+  script:
+    - echo "Building Python package..."
+    - python -m build
+    - ls -lh dist/
+  artifacts:
+    paths:
+      - dist/
+    expire_in: 30 days
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/'
+
+# ---------------------------------------------------------------------------
+# MR Analysis (dog-fooding -- analyze our own MRs)
+# ---------------------------------------------------------------------------
+
+mr-ninja:self-analyze:
+  stage: test
+  image: python:${PYTHON_VERSION}-slim
+  before_script:
+    - pip install -e . --quiet
+  script:
+    - echo "Mr Ninja analyzing its own MR..."
+    - |
+      if [ -n "$CI_MERGE_REQUEST_IID" ]; then
+        mr-ninja analyze \
+          --project "$CI_PROJECT_PATH" \
+          --mr "$CI_MERGE_REQUEST_IID" \
+          --token "$GITLAB_TOKEN" \
+          --gitlab-url "$CI_SERVER_URL" \
+          --post-comment
+      else
+        echo "Not an MR pipeline -- skipping self-analysis"
+      fi
+  rules:
+    - if: '$CI_MERGE_REQUEST_IID && $GITLAB_TOKEN'
+  allow_failure: true
+
+# ---------------------------------------------------------------------------
+# Pages (deploy docs)
+# ---------------------------------------------------------------------------
+
+pages:
+  stage: deploy
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache bash
+  script:
+    - echo "Building GitLab Pages website..."
+    - |
+      mkdir -p public
+      if [ ! -f "public/index.html" ]; then
+        echo "ERROR: public/index.html not found"
+        exit 1
+      fi
+      echo "Website built successfully"
+      ls -lh public/
+  artifacts:
+    paths:
+      - public
+    expire_in: never
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+  needs:
+    - test:unit

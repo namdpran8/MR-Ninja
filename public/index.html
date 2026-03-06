@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Mr Ninja - Large Context Orchestrator for GitLab Duo. Solving the 200k token context limit for enterprise merge request analysis.">
+    <title>Mr Ninja | Large Context Orchestrator for GitLab Duo</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-brand">
+                <span class="ninja-icon">🥷</span>
+                <span class="brand-text">Mr Ninja</span>
+            </div>
+            <div class="nav-links">
+                <a href="#features">Features</a>
+                <a href="#how-it-works">How It Works</a>
+                <a href="#demo">Demo</a>
+                <a href="docs.html">Docs</a>
+                <a href="https://gitlab.com/your-group/mr-ninja" class="btn-secondary" target="_blank" rel="noopener noreferrer">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                        <path d="M8 0l1.6 4.9h5.2l-4.2 3-1.6 4.9-1.6-4.9-4.2-3h5.2z"/>
+                    </svg>
+                    GitLab
+                </a>
+                <a href="#quickstart" class="btn-primary">Get Started</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <div class="badge">GitLab AI Hackathon 2026</div>
+                <h1 class="hero-title">
+                    Break the <span class="highlight">200k Token Limit</span>
+                </h1>
+                <p class="hero-subtitle">
+                    Intelligent MR analysis for enterprise monorepos. Mr Ninja chunks, processes, and aggregates 
+                    merge requests of any size through GitLab Duo's specialist agents.
+                </p>
+                <div class="hero-buttons">
+                    <a href="#quickstart" class="btn-primary btn-large">Quick Start →</a>
+                    <a href="#demo" class="btn-secondary btn-large">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M6.3 2.8l10 7.2-10 7.2V2.8z"/>
+                        </svg>
+                        Watch Demo
+                    </a>
+                </div>
+                <div class="hero-stats">
+                    <div class="stat">
+                        <div class="stat-value">500k+</div>
+                        <div class="stat-label">Tokens Handled</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value">~70k</div>
+                        <div class="stat-label">Per Chunk</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value">6</div>
+                        <div class="stat-label">Priority Tiers</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value">3</div>
+                        <div class="stat-label">Specialist Agents</div>
+                    </div>
+                </div>
+            </div>
+            <div class="hero-visual">
+                <div class="code-window">
+                    <div class="window-header">
+                        <span class="dot dot-red"></span>
+                        <span class="dot dot-yellow"></span>
+                        <span class="dot dot-green"></span>
+                        <span class="window-title">mr_analysis.log</span>
+                    </div>
+                    <div class="window-content">
+                        <div class="log-line"><span class="log-info">INFO</span> Analyzing MR #42: monorepo-refactor</div>
+                        <div class="log-line"><span class="log-info">INFO</span> Estimated tokens: 847,392</div>
+                        <div class="log-line"><span class="log-warn">WARN</span> Exceeds context limit → activating chunking</div>
+                        <div class="log-line"><span class="log-info">INFO</span> Classified 512 files into 6 priority tiers</div>
+                        <div class="log-line"><span class="log-info">INFO</span> Created 12 chunks (avg: 70,616 tokens)</div>
+                        <div class="log-line"><span class="log-success">SUCCESS</span> Chunk 1/12: Security scan complete</div>
+                        <div class="log-line"><span class="log-success">SUCCESS</span> Chunk 2/12: Code review complete</div>
+                        <div class="log-line"><span class="log-success">SUCCESS</span> Chunk 3/12: Dependency check complete</div>
+                        <div class="log-line log-typing"><span class="log-info">INFO</span> Processing chunk 4/12...<span class="cursor">_</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Problem Statement -->
+    <section class="section problem-section">
+        <div class="container">
+            <div class="section-header">
+                <h2>The Problem</h2>
+                <p>GitLab Duo Agent Platform caps context at ~200,000 tokens per call</p>
+            </div>
+            <div class="problem-grid">
+                <div class="problem-card">
+                    <div class="problem-icon">⚠️</div>
+                    <h3>Truncated Reviews</h3>
+                    <p>Large MRs get cut off mid-analysis, missing critical vulnerabilities in later files</p>
+                </div>
+                <div class="problem-card">
+                    <div class="problem-icon">🔓</div>
+                    <h3>Incomplete Scans</h3>
+                    <p>Security checks skip files when context limit is hit, creating compliance gaps</p>
+                </div>
+                <div class="problem-card">
+                    <div class="problem-icon">😤</div>
+                    <h3>Developer Frustration</h3>
+                    <p>Teams can't get automated analysis for their monorepo MRs with 500+ changed files</p>
+                </div>
+                <div class="problem-card">
+                    <div class="problem-icon">📊</div>
+                    <h3>Enterprise Scale</h3>
+                    <p>A single monorepo MR can generate 500k-1M tokens of diff content</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Solution -->
+    <section class="section solution-section" id="features">
+        <div class="container">
+            <div class="section-header">
+                <h2>The Solution</h2>
+                <p>Intelligent chunking, specialist processing, and unified aggregation</p>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">🎯</div>
+                    <h3>Smart Prioritization</h3>
+                    <p>Files are classified into 6 priority tiers (P1-P6). Security-critical files like <code>.env</code>, <code>Dockerfile</code>, and auth handlers are analyzed first.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🧩</div>
+                    <h3>Intelligent Chunking</h3>
+                    <p>Bin-packing algorithm creates optimally-sized chunks (~70k tokens each) while respecting file boundaries and priorities.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🤖</div>
+                    <h3>Specialist Agents</h3>
+                    <p>Each chunk is routed to the right agent: Security Analyst for P1 files, Code Reviewer for logic, Dependency Analyzer for manifests.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔗</div>
+                    <h3>Context Carryover</h3>
+                    <p>Critical findings and open questions persist across chunks via compact summaries, ensuring continuity.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📊</div>
+                    <h3>Unified Aggregation</h3>
+                    <p>Findings are deduplicated, ranked by severity, and synthesized into a single report with risk scoring.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">💬</div>
+                    <h3>GitLab Native</h3>
+                    <p>Posts analysis directly as MR comments, integrates with CI/CD, and uses the GitLab API throughout.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works -->
+    <section class="section how-it-works-section" id="how-it-works">
+        <div class="container">
+            <div class="section-header">
+                <h2>How It Works</h2>
+                <p>Five-stage pipeline from detection to reporting</p>
+            </div>
+            <div class="pipeline">
+                <div class="pipeline-step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h3>Detect</h3>
+                        <p>Estimate token footprint using <code>len(text) / 4</code> heuristic. If >150k tokens, activate chunking.</p>
+                    </div>
+                </div>
+                <div class="pipeline-arrow">→</div>
+                <div class="pipeline-step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h3>Plan</h3>
+                        <p>Classify files by priority (security-critical first, tests last). Bin-pack into ~70k-token chunks.</p>
+                    </div>
+                </div>
+                <div class="pipeline-arrow">→</div>
+                <div class="pipeline-step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h3>Process</h3>
+                        <p>Run each chunk through specialist agents: Security Analyst, Code Reviewer, Dependency Analyzer.</p>
+                    </div>
+                </div>
+                <div class="pipeline-arrow">→</div>
+                <div class="pipeline-step">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <h3>Carry Context</h3>
+                        <p>Generate compact cross-chunk summaries. Critical/High findings and open questions persist.</p>
+                    </div>
+                </div>
+                <div class="pipeline-arrow">→</div>
+                <div class="pipeline-step">
+                    <div class="step-number">5</div>
+                    <div class="step-content">
+                        <h3>Aggregate</h3>
+                        <p>Deduplicate findings, rank by severity, calculate risk score, generate unified Markdown report.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Demo Section -->
+    <section class="section demo-section" id="demo">
+        <div class="container">
+            <div class="section-header">
+                <h2>See It In Action</h2>
+                <p>Run a simulated 512-file MR analysis with no GitLab account required</p>
+            </div>
+            <div class="demo-container">
+                <div class="demo-tabs">
+                    <button class="tab active" data-tab="demo">Demo Mode</button>
+                    <button class="tab" data-tab="real">Real MR</button>
+                    <button class="tab" data-tab="api">API</button>
+                </div>
+                <div class="demo-content">
+                    <div class="demo-pane active" id="demo-pane">
+                        <pre><code class="language-bash"># Install dependencies
+pip install -r requirements.txt
+
+# Run demo simulation (512 files)
+python -m demo.simulate_large_mr
+
+# Custom file count
+python -m demo.simulate_large_mr --files 1000
+
+# Save report to file
+python -m demo.simulate_large_mr --files 512 --output report.md</code></pre>
+                        <div class="demo-output">
+                            <div class="output-header">Expected Output</div>
+                            <div class="output-content">Analyzing synthetic MR: 512 files, ~847k tokens
+Chunking: 12 chunks created
+Processing chunk 1/12... ✓ (8 CRITICAL findings)
+Processing chunk 2/12... ✓ (15 HIGH findings)
+...
+Report generated: 45 total findings, Risk Level: CRITICAL</div>
+                        </div>
+                    </div>
+                    <div class="demo-pane" id="real-pane">
+                        <pre><code class="language-python">from agents.orchestrator import Orchestrator
+
+orchestrator = Orchestrator(
+    gitlab_url='https://gitlab.com',
+    gitlab_token='glpat-xxxxxxxxxxxxxxxxxxxx',
+    post_comments=True,
+)
+
+report = orchestrator.analyze_mr('your-group/your-project', 42)
+print(f'Found {len(report.findings)} issues')</code></pre>
+                    </div>
+                    <div class="demo-pane" id="api-pane">
+                        <pre><code class="language-bash"># Start FastAPI server
+uvicorn app:app --host 0.0.0.0 --port 8000
+
+# Analyze an MR
+curl -X POST http://localhost:8000/analyze \
+  -H "Content-Type: application/json" \
+  -d '{
+    "mr_url": "https://gitlab.com/group/project/-/merge_requests/42",
+    "gitlab_token": "glpat-xxxxxxxxxxxxxxxxxxxx"
+  }'
+
+# Run demo (no token needed)
+curl -X POST http://localhost:8000/demo</code></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Quick Start -->
+    <section class="section quickstart-section" id="quickstart">
+        <div class="container">
+            <div class="section-header">
+                <h2>Quick Start</h2>
+                <p>Get Mr Ninja running in under 2 minutes</p>
+            </div>
+            <div class="quickstart-grid">
+                <div class="quickstart-step">
+                    <div class="step-num">1</div>
+                    <h3>Clone the Repo</h3>
+                    <pre><code>git clone https://gitlab.com/your-group/mr-ninja.git
+cd mr-ninja</code></pre>
+                </div>
+                <div class="quickstart-step">
+                    <div class="step-num">2</div>
+                    <h3>Install Dependencies</h3>
+                    <pre><code>pip install -r requirements.txt</code></pre>
+                </div>
+                <div class="quickstart-step">
+                    <div class="step-num">3</div>
+                    <h3>Run the Demo</h3>
+                    <pre><code>python -m demo.simulate_large_mr</code></pre>
+                </div>
+            </div>
+            <div class="quickstart-docker">
+                <h3>Or use Docker</h3>
+                <pre><code>docker build -t mr-ninja .
+docker run -p 8000:8000 -e GITLAB_TOKEN=glpat-xxx mr-ninja</code></pre>
+            </div>
+        </div>
+    </section>
+
+    <!-- Architecture -->
+    <section class="section architecture-section">
+        <div class="container">
+            <div class="section-header">
+                <h2>Architecture</h2>
+                <p>Robust orchestration with specialist agent processing</p>
+            </div>
+            <div class="architecture-diagram">
+                <pre class="ascii-art">
+    500+ file MR (~800k tokens)
+             |
+             v
+       +--------------+
+       |   Mr Ninja   |
+       | Orchestrator |
+       +------+-------+
+              |
+        +-----+-----+
+        |     |     |
+        v     v     v
+     Chunk  Chunk  Chunk    <-- Each ~70k tokens
+      1      2      3
+      |      |      |
+      v      v      v
+     Agent  Agent  Agent    <-- Security, Code Review, Dependency
+      |      |      |
+      +------+------+
+             |
+        +----v----+
+        |Aggregate|
+        | & Post  |
+        +---------+
+             |
+             v
+       Unified MR Report
+                </pre>
+            </div>
+            <div class="tech-stack">
+                <h3>Tech Stack</h3>
+                <div class="tech-grid">
+                    <div class="tech-item">
+                        <strong>Language:</strong> Python 3.11+
+                    </div>
+                    <div class="tech-item">
+                        <strong>API:</strong> FastAPI
+                    </div>
+                    <div class="tech-item">
+                        <strong>Models:</strong> Pydantic v2
+                    </div>
+                    <div class="tech-item">
+                        <strong>CI/CD:</strong> GitLab CI
+                    </div>
+                    <div class="tech-item">
+                        <strong>Container:</strong> Docker
+                    </div>
+                    <div class="tech-item">
+                        <strong>Testing:</strong> pytest
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="section cta-section">
+        <div class="container">
+            <div class="cta-content">
+                <h2>Ready to Analyze Enterprise-Scale MRs?</h2>
+                <p>Get started with Mr Ninja today and never hit the context limit again</p>
+                <div class="cta-buttons">
+                    <a href="https://gitlab.com/your-group/mr-ninja" class="btn-primary btn-large" target="_blank" rel="noopener noreferrer">
+                        View on GitLab →
+                    </a>
+                    <a href="docs.html" class="btn-secondary btn-large">Read Documentation</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <span class="ninja-icon">🥷</span>
+                    <span class="brand-text">Mr Ninja</span>
+                </div>
+                <div class="footer-links">
+                    <a href="docs.html">Documentation</a>
+                    <a href="#features">Features</a>
+                    <a href="https://gitlab.com/your-group/mr-ninja/-/issues" target="_blank" rel="noopener noreferrer">Issues</a>
+                    <a href="https://gitlab.com/your-group/mr-ninja/-/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">License</a>
+                </div>
+                <div class="footer-info">
+                    <p>Built for the GitLab AI Hackathon 2026</p>
+                    <p>MIT License | Made with ❤️ for the GitLab community</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
