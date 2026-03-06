@@ -11,7 +11,7 @@ All API calls include automatic retry with backoff for rate limiting.
 
 
 # MR-Ninja
-# Copyright (c) 2026 Pranshu Namdeo
+# Copyright (c) 2026 Pranshu Namdeo and Chukwunonso Richard Iwenor
 # Licensed under Apache License 2.0
 
 
