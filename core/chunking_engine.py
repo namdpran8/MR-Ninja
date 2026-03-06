@@ -3,6 +3,11 @@ core/chunking_engine.py
 
 Intelligent file chunking engine for Mr Ninja.
 
+
+# MR-Ninja
+# Copyright (c) 2026 Pranshu Namdeo
+# Licensed under Apache License 2.0
+
 Given a list of FileEntry objects, this engine:
 1. Classifies files by priority (security-critical first, tests last)
 2. Sorts by priority + path for deterministic ordering

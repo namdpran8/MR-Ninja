@@ -9,6 +9,12 @@ Handles MR diffs, file content retrieval, note posting, and pagination.
 All API calls include automatic retry with backoff for rate limiting.
 """
 
+
+# MR-Ninja
+# Copyright (c) 2026 Pranshu Namdeo
+# Licensed under Apache License 2.0
+
+
 from __future__ import annotations
 
 import json

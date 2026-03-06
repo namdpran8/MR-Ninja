@@ -7,6 +7,10 @@ These models define the contract between all system components:
 orchestrator, chunk planner, processors, summarizer, and aggregator.
 """
 
+# MR-Ninja
+# Copyright (c) 2026 Pranshu Namdeo
+# Licensed under Apache License 2.0
+
 from __future__ import annotations
 
 import enum

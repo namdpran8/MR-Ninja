@@ -10,6 +10,10 @@ This avoids the overhead of running a real tokenizer while staying
 within ~10% accuracy for code content — plenty accurate for chunking decisions.
 """
 
+# MR-Ninja
+# Copyright (c) 2026 Pranshu Namdeo
+# Licensed under Apache License 2.0
+
 from __future__ import annotations
 
 import logging

@@ -1,0 +1,246 @@
+# Mr Ninja CI/CD Pipeline
+#
+# Runs tests, linting, demo simulation, and builds the project.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ["v[0-9]+.[0-9]+.[0-9]+"]
+  pull_request:
+    branches: [main]
+
+env:
+  PYTHON_VERSION: "3.11"
+
+jobs:
+  # -------------------------------------------------------------------------
+  # Lint Stage
+  # -------------------------------------------------------------------------
+
+  lint-flake8:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+      - run: pip install flake8 --quiet
+      - name: Run flake8 linter
+        run: |
+          echo "Running flake8 linter..."
+          flake8 src/mr_ninja/ \
+            --max-line-length=120 \
+            --select=E,W,F \
+            --ignore=E501,W503 \
+            --count \
+            --show-source \
+            --statistics
+
+  lint-type-check:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+      - run: pip install mypy pydantic --quiet
+      - name: Run mypy type check
+        run: |
+          echo "Running mypy type check..."
+          mypy src/mr_ninja/core/models.py src/mr_ninja/core/token_estimator.py --ignore-missing-imports
+
+  # -------------------------------------------------------------------------
+  # Test Stage
+  # -------------------------------------------------------------------------
+
+  test-unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+      - run: pip install -e ".[dev]" --quiet
+      - name: Run unit tests
+        run: |
+          echo "Running unit tests..."
+          python -m pytest tests/ -v \
+            --tb=short \
+            --junitxml=report.xml \
+            --cov=mr_ninja \
+            --cov-report=term-missing \
+            --cov-report=xml:coverage.xml
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-report
+          path: report.xml
+          retention-days: 30
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage.xml
+          retention-days: 30
+
+  test-integration:
+    runs-on: ubuntu-latest
+    needs: test-unit
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+      - run: pip install -e ".[dev]" --quiet
+      - name: Run integration tests
+        run: |
+          echo "Running integration tests..."
+          python -m pytest tests/test_orchestrator.py -v --tb=short
+
+  # -------------------------------------------------------------------------
+  # Demo Stage
+  # -------------------------------------------------------------------------
+
+  demo-simulate-mr:
+    runs-on: ubuntu-latest
+    needs: test-unit
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+      - run: pip install -e . --quiet
+      - name: Run demo simulation (512 files)
+        run: |
+          echo "Running demo simulation (512 files)..."
+          mr-ninja demo --files 512 --output demo_report.md
+          echo "Demo report generated successfully"
+          head -50 demo_report.md
+      - name: Upload demo report
+        uses: actions/upload-artifact@v4
+        with:
+          name: demo-report
+          path: demo_report.md
+          retention-days: 7
+
+  # -------------------------------------------------------------------------
+  # Build Stage
+  # -------------------------------------------------------------------------
+
+  build-docker:
+    runs-on: ubuntu-latest
+    needs: [test-unit, test-integration]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    permissions:
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and push Docker image
+        run: |
+          IMAGE=ghcr.io/${{ github.repository }}
+          SHA_TAG=${GITHUB_SHA::7}
+          echo "Building Docker image..."
+          docker build -t $IMAGE:$SHA_TAG .
+          docker tag $IMAGE:$SHA_TAG $IMAGE:latest
+          docker push $IMAGE:$SHA_TAG
+          docker push $IMAGE:latest
+
+  build-pypi:
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+      - run: pip install build twine --quiet
+      - name: Build Python package
+        run: |
+          echo "Building Python package..."
+          python -m build
+          ls -lh dist/
+      - name: Upload package artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-package
+          path: dist/
+          retention-days: 30
+
+  # -------------------------------------------------------------------------
+  # PR Analysis (dog-fooding -- analyze our own PRs)
+  # -------------------------------------------------------------------------
+
+  mr-ninja-self-analyze:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && github.event.pull_request.number != ''
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+      - run: pip install -e . --quiet
+      - name: Mr Ninja self-analysis
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Mr Ninja analyzing its own PR..."
+          mr-ninja analyze \
+            --project "${{ github.repository }}" \
+            --mr "${{ github.event.pull_request.number }}" \
+            --token "$GITHUB_TOKEN" \
+            --github-url "https://github.com" \
+            --post-comment
+
+  # -------------------------------------------------------------------------
+  # Deploy (GitHub Pages)
+  # -------------------------------------------------------------------------
+
+  deploy-pages:
+    runs-on: ubuntu-latest
+    needs: test-unit
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify public directory
+        run: |
+          echo "Building GitHub Pages website..."
+          if [ ! -f "public/index.html" ]; then
+            echo "ERROR: public/index.html not found"
+            exit 1
+          fi
+          echo "Website built successfully"
+          ls -lh public/
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
