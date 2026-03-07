@@ -2,7 +2,7 @@
 
 **Large repo merge request assistant** -- chunk oversized Merge Requests and run multi-agent security analysis.
 
-GitLab Duo caps context at ~200k tokens per agent call. A single MR in a monorepo can generate 500k-1M tokens of diff content, causing truncated reviews and missed vulnerabilities. Mr Ninja solves this by intelligently decomposing large MRs into priority-sorted chunks, processing each through specialist agents, and posting a unified report.
+AI agents often caps context at limited tokens per agent call. A single MR in a monorepo can generate 500k-1M call of diff content, causing truncated reviews and missed vulnerabilities. Mr Ninja solves this by intelligently decomposing large MRs into priority-sorted chunks, processing each through specialist agents, and posting a unified report.
 
 ---
 
