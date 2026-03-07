@@ -305,7 +305,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for packaging, publishing, and release gu
 
 ## License
 
-Copyright [2026] [Pranshu Namdeo and Chukwunonso Richard License]
+Copyright [2026] [Pranshu Namdeo and Chukwunonso Richard Iwenor]
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
