@@ -13,7 +13,6 @@ within ~10% accuracy for code content — plenty accurate for chunking decisions
 from __future__ import annotations
 
 import logging
-import re
 
 logger = logging.getLogger("mr_ninja.token_estimator")
 

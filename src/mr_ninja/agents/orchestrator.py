@@ -21,7 +21,6 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import Optional
 
 from mr_ninja.agents.aggregator import ResultAggregator
 from mr_ninja.agents.chunk_planner import ChunkPlanner

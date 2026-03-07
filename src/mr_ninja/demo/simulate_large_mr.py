@@ -15,13 +15,10 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import os
 import random
 import string
-import sys
-import time
 
-from mr_ninja.core.models import FileEntry, FilePriority
+from mr_ninja.core.models import FileEntry
 
 
 # ---------------------------------------------------------------------------

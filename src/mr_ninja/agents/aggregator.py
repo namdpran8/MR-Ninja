@@ -14,8 +14,6 @@ analysis report. Responsible for:
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
-from typing import Optional
 
 from mr_ninja.core.models import (
     AnalysisReport,

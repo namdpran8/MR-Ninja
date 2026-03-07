@@ -16,12 +16,11 @@ will be analyzed before any actual analysis begins.
 from __future__ import annotations
 
 import logging
-import re
 import time
 from typing import Optional
 
 from mr_ninja.core.chunking_engine import ChunkingEngine
-from mr_ninja.core.models import ChunkPlan, FileEntry, FilePriority
+from mr_ninja.core.models import ChunkPlan, FileEntry
 from mr_ninja.core.token_estimator import TokenEstimator
 from mr_ninja.gitlab.gitlab_client import GitLabClient
 

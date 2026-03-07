@@ -17,11 +17,9 @@ from __future__ import annotations
 
 import logging
 import os
-import sys
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 
 from mr_ninja.agents.orchestrator import Orchestrator
 from mr_ninja.core.models import (

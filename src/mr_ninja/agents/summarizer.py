@@ -19,7 +19,6 @@ maximum room for the next chunk's actual content.
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
 from mr_ninja.core.models import ChunkSummary, Finding, Severity
 
